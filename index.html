@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stick Showdown</title>
+</head>
+<body>
+
+  <canvas id="game"></canvas>
+
+  <!-- ── Menu ──────────────────────────────────────────────────────────────── -->
+  <div id="menu-screen" class="screen">
+    <h1>STICK SHOWDOWN</h1>
+    <p class="subtitle">browser · 1v1 · rollback netcode</p>
+
+    <div class="weapon-row">
+      <label>P1 <select id="p1-weapon">
+        <option value="sword">Sword</option>
+        <option value="staff">Staff</option>
+        <option value="nunchucks">Nunchucks</option>
+      </select></label>
+
+      <label>P2 <select id="p2-weapon">
+        <option value="staff">Staff</option>
+        <option value="sword">Sword</option>
+        <option value="nunchucks">Nunchucks</option>
+      </select></label>
+    </div>
+
+    <button class="primary" id="btn-local">▶ Local 2P</button>
+
+    <hr class="divider" />
+
+    <label>Online weapon <select id="online-weapon">
+      <option value="sword">Sword</option>
+      <option value="staff">Staff</option>
+      <option value="nunchucks">Nunchucks</option>
+    </select></label>
+
+    <button id="btn-create">Create Room</button>
+
+    <div class="room-join-row">
+      <input type="text" id="room-code-input" maxlength="4" placeholder="CODE" />
+      <button id="btn-join">Join Room</button>
+    </div>
+
+    <p id="error-msg"></p>
+  </div>
+
+  <!-- ── Lobby ─────────────────────────────────────────────────────────────── -->
+  <div id="lobby-screen" class="screen">
+    <h2>LOBBY</h2>
+    <p id="lobby-status">Connecting…</p>
+    <button class="btn-back-menu">← Back</button>
+  </div>
+
+  <!-- ── Game ──────────────────────────────────────────────────────────────── -->
+  <div id="game-screen" class="screen">
+    <!-- HUD is drawn on canvas; this div catches rematch overlay -->
+  </div>
+
+  <!-- ── Disconnect overlay ─────────────────────────────────────────────────── -->
+  <div id="disconnect-overlay">
+    <h2>Opponent Disconnected</h2>
+    <p style="color:#888">The connection was lost.</p>
+    <button id="btn-back-lobby" class="btn-back-menu">← Back to Menu</button>
+  </div>
+
+  <!-- ── Desync overlay ────────────────────────────────────────────────────── -->
+  <div id="desync-overlay">
+    <h2>⚠ Desync Detected</h2>
+    <p style="color:#888;max-width:320px;text-align:center">Game states diverged. This is a bug — please report it.</p>
+    <button class="btn-back-menu">← Back to Menu</button>
+  </div>
+
+  <!-- Controls hint -->
+  <p class="controls-hint">
+    P1: A/D move · F light · G heavy · H block · G+H special &nbsp;|&nbsp;
+    P2: ←/→ move · K light · L heavy · ; block · L+; special &nbsp;|&nbsp;
+    R: rematch
+  </p>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

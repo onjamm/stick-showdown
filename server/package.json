@@ -1,0 +1,13 @@
+{
+  "name": "stick-showdown-server",
+  "version": "1.0.0",
+  "description": "WebSocket signaling server for Stick Showdown",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "ws": "^8.17.1"
+  }
+}
