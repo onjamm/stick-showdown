@@ -1,6 +1,6 @@
 import type { FighterState } from '../../sim/types';
 import type { Pose } from './types';
-import { BASE_POSE, CLIP_BLOCK, CLIP_BLOCKSTUN, CLIP_GETUP, CLIP_HITSTUN, CLIP_IDLE, CLIP_KNOCKDOWN, CLIP_WALK, getAttackClip } from './clips';
+import { BASE_POSE, CLIP_BLOCK, CLIP_BLOCKSTUN, CLIP_DASH_B, CLIP_DASH_F, CLIP_GETUP, CLIP_HITSTUN, CLIP_IDLE, CLIP_KNOCKDOWN, CLIP_WALK, getAttackClip } from './clips';
 import { sampleClip, blendPose } from './sample';
 import { applyAttackExaggeration, type Exaggeration } from './exaggeration';
 
@@ -21,6 +21,8 @@ function getClipFor(f: FighterState) {
   if (f.fsm === 'lightAtk' || f.fsm === 'heavyAtk' || f.fsm === 'weaponSpecial') {
     return getAttackClip(f.weapon, f.fsm);
   }
+  if (f.fsm === 'dashF') return CLIP_DASH_F;
+  if (f.fsm === 'dashB') return CLIP_DASH_B;
   if (f.fsm === 'walkF' || f.fsm === 'walkB') return CLIP_WALK;
   if (f.fsm === 'block') return CLIP_BLOCK;
   if (f.fsm === 'blockStun') return CLIP_BLOCKSTUN;
@@ -34,6 +36,7 @@ function getClipTime(f: FighterState, alpha: number, globalFrame: number): numbe
   if (f.fsm === 'lightAtk' || f.fsm === 'heavyAtk' || f.fsm === 'weaponSpecial') {
     return f.fsmFrame + alpha;
   }
+  if (f.fsm === 'dashF' || f.fsm === 'dashB') return clamp(f.fsmFrame + alpha, 0, 14);
   if (f.fsm === 'hitStun') return clamp(f.fsmFrame + alpha, 0, HITSTUN_FRAMES);
   if (f.fsm === 'blockStun') return clamp(f.fsmFrame + alpha, 0, BLOCKSTUN_FRAMES);
   if (f.fsm === 'knockdown') return clamp(f.fsmFrame + alpha, 0, KNOCKDOWN_FRAMES);
@@ -42,7 +45,7 @@ function getClipTime(f: FighterState, alpha: number, globalFrame: number): numbe
   if (f.fsm === 'walkF' || f.fsm === 'walkB') {
     // Electric Man-ish cadence: 8 poses; advance proportional to abs(vel.x).
     const speed = abs(f.vel.x);
-    const k = (speed / WALK_SPEED_BASE) * 0.33; // tuned for readability
+    const k = (speed / WALK_SPEED_BASE) * 0.45; // snappier cadence
     return globalFrame * k;
   }
 
@@ -55,7 +58,9 @@ function getClipTime(f: FighterState, alpha: number, globalFrame: number): numbe
 }
 
 function applyContextualAdjustments(p: Pose, f: FighterState): Pose {
-  // Walk backward reads better with slight lean away from opponent.
+  if (f.fsm === 'walkF') {
+    return { ...p, torsoLean: p.torsoLean + 0.10, hipOffset: { x: p.hipOffset.x + 0.04, y: p.hipOffset.y } };
+  }
   if (f.fsm === 'walkB') {
     return { ...p, torsoLean: p.torsoLean - 0.06, hipOffset: { x: p.hipOffset.x - 0.04, y: p.hipOffset.y } };
   }

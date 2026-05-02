@@ -209,19 +209,39 @@ export function drawFighter(
   ctx.fill();
   ctx.restore();
 
-  // Aura: suppressed at point-blank so silhouettes stay readable.
-  const auraIntensity = 1 - crowdClamped * 0.55;
-  const auraR = U * (1.05 - crowdClamped * 0.25);
-  drawJaggedAura(
-    ctx,
-    col,
-    globalFrame + playerIdx * 1337,
-    0,
-    shoulderCenter.y - U * 0.48,
-    auraR,
-    lw,
-    auraIntensity,
-  );
+  // ── Electric Man body glow ───────────────────────────────────────────────────
+  // Build the entire body as one Path2D so we can stroke it twice (outer spread +
+  // bright core) with zero shadowBlur — shadowBlur is per-stroke and kills perf.
+  const glowAlpha = (() => {
+    if (f.fsm === 'lightAtk' || f.fsm === 'heavyAtk' || f.fsm === 'weaponSpecial') return 0.55;
+    if (f.fsm === 'hitStun' || f.fsm === 'knockdown') return 0.12;
+    if (f.fsm === 'block' || f.fsm === 'blockStun') return 0.16;
+    return 0.28;
+  })();
+  const glowFade = glowAlpha * (1 - crowdClamped * 0.45);
+
+  const gp = new Path2D();
+  gp.moveTo(hip.x, hip.y); gp.lineTo(shoulderCenter.x, shoulderCenter.y);
+  gp.moveTo(rHip.x, rHip.y); gp.lineTo(rLeg.joint.x, rLeg.joint.y); gp.lineTo(rLeg.end.x, rLeg.end.y);
+  gp.moveTo(lHip.x, lHip.y); gp.lineTo(lLeg.joint.x, lLeg.joint.y); gp.lineTo(lLeg.end.x, lLeg.end.y);
+  gp.moveTo(rShoulder.x, rShoulder.y); gp.lineTo(rArm.joint.x, rArm.joint.y); gp.lineTo(rArm.end.x, rArm.end.y);
+  gp.moveTo(lShoulder.x, lShoulder.y); gp.lineTo(lArm.joint.x, lArm.joint.y); gp.lineTo(lArm.end.x, lArm.end.y);
+  gp.arc(head.x, head.y, headR + lw * 0.8, 0, Math.PI * 2);
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = col;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  // Outer spread — wide, faint
+  ctx.lineWidth = lw * 7;
+  ctx.globalAlpha = glowFade * 0.28;
+  ctx.stroke(gp);
+  // Core glow — narrower, brighter
+  ctx.lineWidth = lw * 2.8;
+  ctx.globalAlpha = glowFade * 0.72;
+  ctx.stroke(gp);
+  ctx.restore();
 
   // Draw outline pass then ink pass.
   const outlineW = lw + (crowdClamped > 0.35 ? 2.0 : 1.4);
@@ -280,69 +300,6 @@ export function drawFighter(
   ctx.restore();
 }
 
-function drawJaggedAura(
-  ctx: CanvasRenderingContext2D,
-  color: string,
-  seed: number,
-  cx: number,
-  cy: number,
-  radius: number,
-  lw: number,
-  intensity: number,
-): void {
-  const spikes = 22;
-  const jitter = radius * 0.22;
-  const phase = seed * 0.017;
-
-  ctx.save();
-  ctx.translate(cx, cy);
-
-  const k = Math.max(0, Math.min(1, intensity));
-
-  // Outer soft glow.
-  ctx.save();
-  ctx.globalAlpha = 0.18 * k;
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 14;
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  for (let i = 0; i <= spikes; i++) {
-    const t = (i / spikes) * Math.PI * 2;
-    const n = Math.sin(t * 3 + phase) * 0.55 + Math.sin(t * 7 - phase) * 0.45;
-    const r = radius + n * (jitter * 0.35);
-    const x = Math.cos(t) * r;
-    const y = Math.sin(t) * (r * 0.98);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  // Main aura shape.
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.fillStyle = color;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = Math.max(2, lw * 0.9);
-  ctx.beginPath();
-  for (let i = 0; i <= spikes; i++) {
-    const t = (i / spikes) * Math.PI * 2;
-    const n = Math.sin(t * 5 + phase) * 0.6 + Math.sin(t * 11 - phase) * 0.4;
-    const r = radius + n * jitter;
-    const x = Math.cos(t) * r;
-    const y = Math.sin(t) * (r * 0.98);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.globalAlpha = 0.24 * k;
-  ctx.fill();
-  ctx.globalAlpha = 0.40 * k;
-  ctx.stroke();
-
-  ctx.restore();
-}
 
 function drawWeapon(
   ctx: CanvasRenderingContext2D,

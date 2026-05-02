@@ -49,8 +49,8 @@ export function applyAttackExaggeration(
   const pre = clamp((t) / Math.max(1, start), 0, 1);
   const post = clamp((t - end) / Math.max(1, (len - end)), 0, 1);
 
-  // Impact pulse: tight window around first active frame.
-  const impactWindow = 0.9;
+  // Impact pulse: wider window so the stretch is visibly readable.
+  const impactWindow = 2.5;
   const impactT = clamp((t - start) / impactWindow, 0, 1);
   const impact = 1 - Math.abs(impactT * 2 - 1); // triangle
   const impactK = easeInOutCubic(impact);
@@ -82,6 +82,7 @@ export function applyAttackExaggeration(
     out = addPose(out, {
       hipOffset: { x: 0.08 * impactK * punchiness, y: -0.02 * impactK },
       shoulderOffset: { x: 0.02 * impactK, y: -0.02 * impactK },
+      headOffset: { x: 0.10 * impactK * punchiness, y: -0.03 * impactK },
       rHandTarget: { x: 0.22 * impactK * punchiness, y: -0.06 * impactK },
       lHandTarget: { x: 0.10 * impactK, y: -0.03 * impactK },
       weaponReach: 0.10 * impactK,
@@ -92,6 +93,7 @@ export function applyAttackExaggeration(
   if (ftK > 0) {
     out = addPose(out, {
       hipOffset: { x: -0.05 * ftK, y: 0.04 * ftK },
+      headOffset: { x: -0.08 * ftK, y: 0.02 * ftK },
       rHandTarget: { x: -0.10 * ftK, y: 0.05 * ftK },
       lHandTarget: { x: -0.06 * ftK, y: 0.04 * ftK },
       weaponReach: -0.04 * ftK,
@@ -99,7 +101,7 @@ export function applyAttackExaggeration(
     });
   }
 
-  const armStretch = clamp(lerp(1, 1.16, impactK * punchiness), 1, 1.18);
+  const armStretch = clamp(lerp(1, 1.20, impactK * punchiness), 1, 1.26);
   const torsoSquash = clamp(1 - antK * 0.05 + impactK * 0.03 - ftK * 0.02, 0.92, 1.05);
 
   return { pose: out, ex: { armStretch, torsoSquash } };

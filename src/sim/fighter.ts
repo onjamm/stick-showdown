@@ -13,6 +13,9 @@ const GETUP_FRAMES     = 20;
 const BLOCK_STUN_FRAMES = 8;
 const STAMINA_REGEN    = 1;   // per frame when not blocking
 const STAMINA_MAX      = 100;
+const DASH_FRAMES      = 14;  // duration of a dash
+const DASH_SPEED       = 360; // fixed units/frame (2.6× walk speed)
+const DASH_WINDOW      = 12;  // max frames between taps to register double-tap
 
 function attackLength(w: Weapon, fsm: 'lightAtk' | 'heavyAtk' | 'weaponSpecial'): number {
   const table = {
@@ -24,7 +27,7 @@ function attackLength(w: Weapon, fsm: 'lightAtk' | 'heavyAtk' | 'weaponSpecial')
   return table[w][idx];
 }
 
-export function stepFighter(f: FighterState, input: InputFrame, opponentX: number): void {
+export function stepFighter(f: FighterState, input: InputFrame, opponentX: number, frame: number): void {
   // Decrement counters
   if (f.invincible > 0) f.invincible--;
 
@@ -53,6 +56,8 @@ export function stepFighter(f: FighterState, input: InputFrame, opponentX: numbe
     case 'walkF':
     case 'walkB': {
       f.vel.x = 0;
+      const wasWalkF = f.fsm === 'walkF';
+      const wasWalkB = f.fsm === 'walkB';
       if (pressLight) {
         f.fsm = 'lightAtk'; f.fsmFrame = 0; f.hitboxActive = false;
       } else if (pressHeavy) {
@@ -60,11 +65,37 @@ export function stepFighter(f: FighterState, input: InputFrame, opponentX: numbe
       } else if (pressBlock && f.stamina > 0) {
         f.fsm = 'block'; f.fsmFrame = 0;
       } else if (movingForward) {
-        f.fsm = 'walkF'; applyWalkVelocity(f, f.facing * 140);
+        if (!wasWalkF && frame - f.lastFwdTapFrame <= DASH_WINDOW) {
+          // Double-tap forward → dash forward
+          f.fsm = 'dashF'; f.fsmFrame = 0;
+          f.lastFwdTapFrame = -DASH_WINDOW; // prevent re-trigger
+        } else {
+          if (!wasWalkF) f.lastFwdTapFrame = frame;
+          f.fsm = 'walkF'; applyWalkVelocity(f, f.facing * 140);
+        }
       } else if (movingBackward) {
-        f.fsm = 'walkB'; applyWalkVelocity(f, -f.facing * 110);
+        if (!wasWalkB && frame - f.lastBwdTapFrame <= DASH_WINDOW) {
+          // Double-tap backward → dash backward
+          f.fsm = 'dashB'; f.fsmFrame = 0;
+          f.lastBwdTapFrame = -DASH_WINDOW;
+        } else {
+          if (!wasWalkB) f.lastBwdTapFrame = frame;
+          f.fsm = 'walkB'; applyWalkVelocity(f, -f.facing * 110);
+        }
       } else {
         f.fsm = 'idle'; f.vel.x = 0;
+      }
+      break;
+    }
+
+    // ── Dash ─────────────────────────────────────────────────────────────────
+    case 'dashF':
+    case 'dashB': {
+      f.fsmFrame++;
+      const dashDir = f.fsm === 'dashF' ? f.facing : -f.facing;
+      applyWalkVelocity(f, dashDir * DASH_SPEED);
+      if (f.fsmFrame >= DASH_FRAMES) {
+        f.fsm = 'idle'; f.fsmFrame = 0; f.vel.x = 0;
       }
       break;
     }
@@ -173,17 +204,19 @@ export function applyHit(
 
 export function makeFighter(x: number, facing: 1 | -1, weapon: Weapon): FighterState {
   return {
-    pos:          { x, y: 0 },
-    vel:          { x: 0, y: 0 },
+    pos:             { x, y: 0 },
+    vel:             { x: 0, y: 0 },
     facing,
-    hp:           1000,
-    stamina:      100,
+    hp:              1000,
+    stamina:         100,
     weapon,
-    fsm:          'idle',
-    fsmFrame:     0,
-    comboCount:   0,
-    hitboxActive: false,
-    invincible:   0,
-    lastHitFrame: 0,
+    fsm:             'idle',
+    fsmFrame:        0,
+    comboCount:      0,
+    hitboxActive:    false,
+    invincible:      0,
+    lastHitFrame:    0,
+    lastFwdTapFrame: -100,
+    lastBwdTapFrame: -100,
   };
 }

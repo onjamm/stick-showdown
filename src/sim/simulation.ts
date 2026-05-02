@@ -25,18 +25,20 @@ export function makeInitialState(p1Weapon: Weapon, p2Weapon: Weapon): GameState 
 // Deep clone — no structuredClone (nondeterministic serialization order risk), manual copy
 export function cloneState(s: GameState): GameState {
   const cloneFighter = (f: (typeof s.fighters)[0]) => ({
-    pos:          { x: f.pos.x, y: f.pos.y },
-    vel:          { x: f.vel.x, y: f.vel.y },
-    facing:       f.facing,
-    hp:           f.hp,
-    stamina:      f.stamina,
-    weapon:       f.weapon,
-    fsm:          f.fsm,
-    fsmFrame:     f.fsmFrame,
-    comboCount:   f.comboCount,
-    hitboxActive: f.hitboxActive,
-    invincible:   f.invincible,
-    lastHitFrame: f.lastHitFrame,
+    pos:             { x: f.pos.x, y: f.pos.y },
+    vel:             { x: f.vel.x, y: f.vel.y },
+    facing:          f.facing,
+    hp:              f.hp,
+    stamina:         f.stamina,
+    weapon:          f.weapon,
+    fsm:             f.fsm,
+    fsmFrame:        f.fsmFrame,
+    comboCount:      f.comboCount,
+    hitboxActive:    f.hitboxActive,
+    invincible:      f.invincible,
+    lastHitFrame:    f.lastHitFrame,
+    lastFwdTapFrame: f.lastFwdTapFrame,
+    lastBwdTapFrame: f.lastBwdTapFrame,
   });
   return {
     frame:      s.frame,
@@ -89,8 +91,8 @@ export function tick(state: GameState, inputs: [InputFrame, InputFrame]): GameSt
   const [f0, f1] = s.fighters;
 
   // Step FSMs
-  stepFighter(f0, inputs[0], f1.pos.x);
-  stepFighter(f1, inputs[1], f0.pos.x);
+  stepFighter(f0, inputs[0], f1.pos.x, s.frame);
+  stepFighter(f1, inputs[1], f0.pos.x, s.frame);
 
   // Physics
   stepPhysics(f0);

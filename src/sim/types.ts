@@ -16,6 +16,8 @@ export type FighterFSM =
   | 'idle'
   | 'walkF'
   | 'walkB'
+  | 'dashF'
+  | 'dashB'
   | 'lightAtk'
   | 'heavyAtk'
   | 'weaponSpecial'
@@ -39,6 +41,8 @@ export interface FighterState {
   hitboxActive: boolean;
   invincible:   number;       // frames of invincibility remaining
   lastHitFrame: number;       // frame of last hit received (for combo window)
+  lastFwdTapFrame: number;    // globalFrame of last forward-direction tap (double-tap dash)
+  lastBwdTapFrame: number;    // globalFrame of last backward-direction tap
 }
 
 export interface GameState {
